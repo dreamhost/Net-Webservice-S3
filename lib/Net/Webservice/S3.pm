@@ -89,8 +89,12 @@ sub new {
 		Carp::croak("secret_key is meaningless without an access_key");
 	}
 
-	$self->{host} = delete $args{host} or Carp::croak("host is required");
-	$self->{ssl} = delete $args{ssl} // 1;
+	my $host = delete $args{host} or Carp::croak("host is required");
+	my $ssl  = delete $args{ssl} // 1;
+
+	my $uri = $self->{uri} = URI->new();
+	$uri->scheme($ssl ? "https" : "http");
+	$uri->host($host);
 
 	my $ua = delete $args{ua} // "Net::Webservice::S3 $VERSION";
 	$self->{agent} = delete $args{agent} // LWP::UserAgent->new(agent => $ua);
@@ -100,6 +104,57 @@ sub new {
 	}
 
 	return $self;
+}
+
+
+=item $S3->access_key
+
+Returns the access key used by this S3 connection.
+
+=cut
+
+sub access_key {
+	my ($self) = @_;
+	return $self->{access_key};
+}
+
+
+=item $S3->secret_key
+
+Returns the secret key used by this S3 connection.
+
+=cut
+
+sub secret_key {
+	my ($self) = @_;
+	return $self->{secret_key};
+}
+
+
+=item $S3->agent
+
+Returns the agent used by this S3 connection.
+
+=cut
+
+sub agent {
+	my ($self) = @_;
+	return $self->{agent};
+}
+
+
+=item $S3->uri([$path])
+
+Returns a fully qualified URI for the specified path relative to the S3
+endpoint, or the URI of the endpoint if no path is specified.
+
+=cut
+
+sub uri {
+	my ($self, $path) = @_;
+	my $U = $self->{uri}->clone();
+	$U->path($path) if defined $path;
+	return $U;
 }
 
 
@@ -119,24 +174,26 @@ sub _sign_request_string {
 		$_ . ":" . join ",", @{$amz_headers{$_}}
 	} sort keys %amz_headers;
 
-	my $URI = URI->new($req->uri);
-	my $host = lc ($req->header("Host") // $URI->host);
-	my $suffixlen = 1 + length $self->{host};
+	my $ReqURI = URI->new($req->uri);
+	my $reqhost = lc ($req->header("Host") // $ReqURI->host);
+
+	my $ephost = $self->uri->host;
+	my $suffixlen = 1 + length $ephost;
 
 	my $canon_resource = "";
 
-	if ($host eq $self->{host}) {
+	if ($reqhost eq $ephost) {
 		# Do nothing
-	} elsif (substr($host, -$suffixlen) eq "." . $self->{host}) {
-		$canon_resource .= "/" . substr($host, 0, -$suffixlen);
+	} elsif (substr($reqhost, -$suffixlen) eq ".$ephost") {
+		$canon_resource .= "/" . substr($reqhost, 0, -$suffixlen);
 	} else {
-		$canon_resource .= "/" . $host;
+		$canon_resource .= "/" . $reqhost;
 	}
 
-	$canon_resource .= $URI->path || "/";
+	$canon_resource .= $ReqURI->path || "/";
 
 	my %subres;
-	for my $part (split /&/, $URI->query) {
+	for my $part (split /&/, $ReqURI->query) {
 		if (my ($k, $v) = $part =~ m{
 			^ (
 				acl | lifecycle | location | logging | notification |
@@ -176,13 +233,18 @@ endpoint, the request is signed using the secret key present on the instance
 
 sub sign_request {
 	my ($self, $req) = @_;
-	return if !defined $self->{access_key};
+
+	my $access_key = $self->access_key;
+	return if !defined $access_key;
+
 	my $sig = Digest::HMAC->new(
-		$self->{secret_key}, "Digest::SHA1"
+		$self->secret_key, "Digest::SHA1"
 	)->add(
 		$self->_sign_request_string($req)
 	)->b64digest() . "="; # Digest::HMAC leaves out padding
-	$req->header(Authorization => "AWS $self->{access_key}:$sig");
+
+	$req->header(Authorization => "AWS $access_key:$sig");
+
 	return $sig;
 }
 
@@ -190,8 +252,8 @@ sub sign_request {
 =item $S3->sign_request($Request)
 
 Given an HTTP::Request instance representing a request to be made to the S3
-endpoint, the request is signed and executed, and the response (as HTTP::Response)
-is returned.
+endpoint, the request is signed and executed, and the results are returned
+as an HTTP::Response instance.
 
 =cut
 
@@ -199,7 +261,7 @@ sub run_request {
 	my ($self, $req) = @_;
 	$req->header("Date" => POSIX::strftime("%a, %d %b %Y %T %z", gmtime));
 	$self->sign_request($req);
-	return $self->{agent}->request($req);
+	return $self->agent->request($req);
 }
 
 
