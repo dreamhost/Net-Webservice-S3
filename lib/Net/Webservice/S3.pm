@@ -143,17 +143,31 @@ sub agent {
 }
 
 
-=item $S3->uri([$path])
+=item $S3->uri([$path, [$query]])
 
 Returns a fully qualified URI for the specified path relative to the S3
 endpoint, or the URI of the endpoint if no path is specified.
 
+If C<$query> is present as a scalar, it is appended as a query string.
+
+If C<$query> is present as an arrayref, it is appended as a set of URL-encoded
+query parameters (i.e, it is treated as a list of key/value pairs).
+
 =cut
 
 sub uri {
-	my ($self, $path) = @_;
+	my ($self, $path, $query) = @_;
 	my $U = $self->{uri}->clone();
-	$U->path($path) if defined $path;
+	# Leading slash is required here. URI adds one if none is present, but
+	# this can make some paths with leading slashes not work.
+	$U->path("/$path") if defined $path;
+	if (ref $query eq "ARRAY") {
+		$U->query_form($query);
+	} elsif (ref $query) {
+		Carp::croak("Invalid query");
+	} elsif (defined $query) {
+		$U->query($query);
+	}
 	return $U;
 }
 
