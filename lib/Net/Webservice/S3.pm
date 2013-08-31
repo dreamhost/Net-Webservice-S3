@@ -172,6 +172,23 @@ sub uri {
 }
 
 
+=item $S3->bucket($name)
+
+Creates a Net::Webservice::S3::Bucket instance representing the bucket with the
+specified name under this connection.
+
+The bucket is not created or checked for existence as part of this operation.
+Methods are provided on the bucket instance for both tasks.
+
+=cut
+
+sub bucket {
+	my ($self, $name) = @_;
+	require Net::Webservice::S3::Bucket;
+	return Net::Webservice::S3::Bucket->new($self, $name);
+}
+
+
 # Given a request, generate the string to be used for HMAC1 signature.
 # Split out to enable testing.
 
