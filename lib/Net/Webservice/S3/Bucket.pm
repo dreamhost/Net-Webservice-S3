@@ -4,6 +4,7 @@ use strict;
 package Net::Webservice::S3::Bucket;
 
 use Carp;
+use HTTP::Request;
 
 =head1 NAME
 
@@ -76,6 +77,29 @@ parameters (as key-value pairs) if it is an array reference.
 sub uri {
 	my ($self, $path, $query) = @_;
 	return $self->connection->uri($self->name . "/" . $path, $query);
+}
+
+
+=item $Bucket->exists()
+
+Returns a true value if the bucket exists. (Including if it exists but is owned
+by someone else.)
+
+=cut
+
+sub exists {
+	my ($self) = @_;
+	my $res = $self->connection->run_request(
+		HTTP::Request->new(HEAD => $self->uri(""))
+	);
+
+	return 0 if $res->code == 404;
+	return 1 if $res->code == 200 or $res->code == 403;
+
+	# We're not sure if this exists. Let's pretend it does exist, because
+	# that does mean it can't be created (which is what probably matters).
+	Carp::carp("Got HTTP " . $res->code . " on bucket HEAD");
+	return 1;
 }
 
 

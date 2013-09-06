@@ -23,6 +23,7 @@ Module::Build->new(
 
 	test_requires => {
 		"Test::More" => 0,
+		"Test::Mock::LWP::Dispatch" => 0,
 	},
 
 	meta_merge => {
