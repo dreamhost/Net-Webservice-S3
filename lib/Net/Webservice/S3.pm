@@ -280,7 +280,7 @@ sub sign_request {
 }
 
 
-=item $S3->sign_request($Request)
+=item $S3->run_request($Request)
 
 Given an HTTP::Request instance representing a request to be made to the S3
 endpoint, the request is signed and executed, and the results are returned
