@@ -82,6 +82,10 @@ If C<agent> (above) is unset, the value of this option is used as the
 User-Agent of the automatically created LWP::UserAgent. Defaults to a string
 referring to this module.
 
+=item debug
+
+Causes S3 to spew out a bunch of debugging messages to standard error.
+
 =back
 
 =cut
@@ -106,6 +110,8 @@ sub new {
 
 	my $ua = delete $args{ua} // "Net::Webservice::S3 $VERSION";
 	$self->{agent} = delete $args{agent} // LWP::UserAgent->new(agent => $ua);
+
+	$self->{debug} = delete $args{debug};
 
 	if (my (@args) = keys %args) {
 		Carp::croak("Unexpected arguments to Net::Webservice::S3->new: @args");
@@ -333,7 +339,10 @@ sub run_request {
 	my ($self, $req) = @_;
 	$req->header("Date" => POSIX::strftime("%a, %d %b %Y %T %z", gmtime));
 	$self->sign_request($req);
-	return $self->agent->request($req);
+	print STDERR "--- SEND ---\n" . $req->as_string if $self->{debug};
+	my $res = $self->agent->request($req);
+	print STDERR "--- RECV ---\n" . $res->as_string if $self->{debug};
+	return $res;
 }
 
 
