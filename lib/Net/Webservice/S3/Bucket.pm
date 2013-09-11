@@ -80,6 +80,23 @@ sub uri {
 }
 
 
+=item $Bucket->key($key)
+
+Creates a Net::Webservice::S3::Key instance representing the key with the
+specified name in this bucket.
+
+As with the analogous method S3->bucket(), the key is not created or checked
+for existence.
+
+=cut
+
+sub key {
+	my ($self, $name) = @_;
+	require Net::Webservice::S3::Key;
+	return Net::Webservice::S3::Key->new($self, $name);
+}
+
+
 =item $Bucket->exists()
 
 Returns a true value if the bucket exists. (Including if it exists but is owned
