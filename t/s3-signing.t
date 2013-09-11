@@ -1,5 +1,5 @@
 use strict;
-use Test::More tests => 27;
+use Test::More tests => 30;
 use Net::Webservice::S3;
 
 use HTTP::Request;
@@ -215,3 +215,28 @@ check_sig(
 	"NpgCjnDzrM+WFzoENXmpNDUsSn8="
 );
 
+# The following test cases are NOT from the Amazon documentation! They test
+# edge cases that are only hinted at in the documentation. Tricky, tricky.
+
+# Test two things:
+#   1. response-X headers
+#   2. some tricky encoding in the header (no %2B for +)
+#
+# The second bit is to confirm the absence of the bug described at:
+# http://stackoverflow.com/q/9051650/
+
+check_sig(
+	"response-content-type header",
+	GET => "http://example.s3.amazonaws.com/object?response-content-type=image/svg%2Bxml",
+	[
+		"Expires" => "1378868184",
+	],
+	(
+		"GET\n"
+		. "\n"
+		. "\n"
+		. "1378868184\n"
+		. "/example/object?response-content-type=image/svg+xml"
+	),
+	"/oy0PnUWukjqPRNMmz1YSj3iWhc="
+);

@@ -21,6 +21,9 @@ use POSIX;
 use LWP::UserAgent;
 use HTTP::Request;
 
+use URI;
+use URI::Escape;
+
 use Digest::HMAC;
 use Digest::SHA1;
 
@@ -261,13 +264,17 @@ sub _sign_request_string {
 			^ (
 				acl | lifecycle | location | logging | notification |
 				partNumber | policy | requestPayment | torrent | uploadId |
-				uploads | versionId | versioning | versions | website
+				uploads | versionId | versioning | versions | website |
+				response- (?:
+					content-type | content-language | expires |
+					cache-control | content-disposition | content-encoding
+				)
 			)
 			( = .* )? $
 		}x){
 			# Q: What happens if a subresource is duplicated?
 			# Documentation doesn't say.
-			$subres{$k} = $v;
+			$subres{$k} = URI::Escape::uri_unescape($v);
 		}
 	}
 
