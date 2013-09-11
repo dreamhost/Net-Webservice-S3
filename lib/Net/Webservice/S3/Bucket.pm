@@ -3,8 +3,8 @@ use strict;
 
 package Net::Webservice::S3::Bucket;
 
-use Carp;
-use HTTP::Request;
+use Carp ();
+use HTTP::Request ();
 
 =head1 NAME
 

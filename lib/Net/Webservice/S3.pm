@@ -15,19 +15,19 @@ Net::Webservice::S3 - a simple but powerful interface to S3-compatible object st
 
 our $VERSION = "0.01";
 
-use Carp;
-use POSIX;
+use Carp ();
+use POSIX ();
 
-use LWP::UserAgent;
-use HTTP::Request;
+use LWP::UserAgent ();
+use HTTP::Request ();
 
-use URI;
-use URI::Escape;
+use URI ();
+use URI::Escape ();
 
-use Digest::HMAC;
-use Digest::SHA1;
+use Digest::HMAC ();
+use Digest::SHA1 ();
 
-use XML::Simple;
+use XML::Simple ();
 
 =item Net::Webservice::S3->new(%opts)
 
