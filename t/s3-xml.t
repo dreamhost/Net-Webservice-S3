@@ -1,5 +1,5 @@
 use strict;
-use Test::More;
+use Test::More tests => 3;
 use Test::Mock::LWP::Dispatch qw( $mock_ua );
 use Net::Webservice::S3;
 
