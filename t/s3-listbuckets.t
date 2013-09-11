@@ -28,7 +28,7 @@ my $xml = <<EOF;
 </ListAllMyBucketsResult>
 EOF
 
-$mock_ua->map("https://s3.example.com/" => sub {
+$mock_ua->map("https://s3.example.com" => sub {
 	my ($req) = @_;
 	is($req->method, "GET", "Request for bucket list is GET");
 	my $res = HTTP::Response->new(200);

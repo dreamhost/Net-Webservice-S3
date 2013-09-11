@@ -206,7 +206,9 @@ owned by the current user.
 
 sub buckets {
 	my ($self) = @_;
-	my ($code, $res) = $self->xml_request(undef, GET => "");
+	my ($code, $res) = $self->xml_request(
+		HTTP::Request->new(GET => $self->uri())
+	);
 	Carp::croak("Got HTTP $code trying to list buckets") if $code != 200;
 	return map {
 		$self->bucket($_->{Name}->[0])
@@ -335,30 +337,33 @@ sub run_request {
 }
 
 
-=item $S3->xml_request($data, $method, $path, [$query])
+=item $S3->xml_request($request, [$data])
 
-Creates and runs a request with method C<$method> to the specified path (and
-optional query) relative to the S3 endpoint, sending C<$data> as XML data and
-returning the result status and parsed XML response as a two-element array.
+Runs the specified request with XML input and output: if C<$data> is set, it is
+serialized as XML data and passed in the body of the request, and if the
+request returns data, it is deserialized.
 
-If the request shouldn't send data, set C<$data> to undef.
+The function returns an array consisting of three elements: the HTTP response
+code, the deserialized response, and the raw HTTP::Response.
 
-L<XML::Simple> semantics (with ForceArray and KeepRoot) are used for XML.
+L<XML::Simple> semantics (with ForceArray and KeepRoot both set) are used for
+parsing and generating XML.
 
 =cut
 
 sub xml_request {
-	my ($self, $data, $method, $path, $query) = @_;
+	my ($self, $req, $data) = @_;
 
 	my $XML = XML::Simple->new(
 		ForceArray => 1,
 		KeepRoot => 1,
 	);
 
-	my $req = HTTP::Request->new($method => $self->uri($path, $query));
 	$req->content($XML->XMLout($data)) if defined $data;
 	my $res = $self->run_request($req);
-	return ($res->code, $XML->XMLin($res->decoded_content));
+	my $content = $res->decoded_content;
+	my $data = length $content ? $XML->XMLin($content) : undef;
+	return ($res->code, $data, $res);
 }
 
 

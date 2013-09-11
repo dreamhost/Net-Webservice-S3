@@ -1,7 +1,9 @@
 use strict;
-use Test::More tests => 3;
+use Test::More tests => 4;
 use Test::Mock::LWP::Dispatch qw( $mock_ua );
 use Net::Webservice::S3;
+
+use HTTP::Request;
 
 my $S3 = Net::Webservice::S3->new(
 	host => "s3.example.com",
@@ -27,20 +29,28 @@ my $xmlout = <<EOF;
 </ExampleResult>
 EOF
 
-$mock_ua->map("https://s3.example.com/test/this%3Fnot-a-query?query" => sub {
+$mock_ua->map("https://s3.example.com/test" => sub {
 	my ($req) = @_;
 	is($req->method, "POST", "Request method is correct");
 	is($req->content, $xmlin, "Request content is correct");
+	is($req->header("X-Foo"), "Bar", "Request custom header is correct");
 	my $res = HTTP::Response->new(200);
 	$res->content($xmlout);
 	return $res;
 });
 
-my ($code, $result) = $S3->xml_request({
-	ExampleRequest => [{
-		Hello => ["world"],
-	}],
-}, POST => "test/this?not-a-query", "query");
+my ($code, $result) = $S3->xml_request(
+	HTTP::Request->new(
+		POST => $S3->uri("test"),
+		[ "X-Foo" => "Bar" ],
+	),
+	{
+		ExampleRequest => [{
+			Hello => ["world"],
+		}],
+	}
+);
+
 is_deeply($result, {
 	ExampleResult => [{
 		xmlns => "http://example.com/12345",
