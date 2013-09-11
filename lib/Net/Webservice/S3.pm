@@ -58,6 +58,10 @@ s3.amazonaws.com (Amazon S3)
 
 objects.dreamhost.com (DreamObjects)
 
+=item
+
+storage.googleapis.com (Google Cloud Storage)
+
 =back
 
 =item ssl
