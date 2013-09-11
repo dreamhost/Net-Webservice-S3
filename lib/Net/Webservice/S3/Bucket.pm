@@ -14,7 +14,7 @@ Net::Webservice::S3::Bucket - a S3 bucket
 
 =over
 
-=item Net::Webservice::S3::Bucket->new($name, $Connection)
+=item Net::Webservice::S3::Bucket->new($Connection, $name)
 
 Creates an object representing an S3 bucket with the given name, accessed
 through the specified Net::Webservice::S3 connection.
