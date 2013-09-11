@@ -24,6 +24,7 @@ use HTTP::Request;
 use Digest::HMAC;
 use Digest::SHA1;
 
+use XML::Simple;
 
 =item Net::Webservice::S3->new(%opts)
 
@@ -189,6 +190,16 @@ sub bucket {
 }
 
 
+=head2 PLUMBING
+
+The following functions are intended primarily for internal use by
+Net::Webservice::S3. They may be useful if you need to access some
+functionality that isn't currently exposed by the module, but they should be
+considered a last resort.
+
+=cut
+
+
 # Given a request, generate the string to be used for HMAC1 signature.
 # Split out to enable testing.
 
@@ -293,6 +304,33 @@ sub run_request {
 	$req->header("Date" => POSIX::strftime("%a, %d %b %Y %T %z", gmtime));
 	$self->sign_request($req);
 	return $self->agent->request($req);
+}
+
+
+=item $S3->xml_request($data, $method, $path, [$query])
+
+Creates and runs a request with method C<$method> to the specified path (and
+optional query) relative to the S3 endpoint, sending C<$data> as XML data and
+returning the result status and parsed XML response as a two-element array.
+
+If the request shouldn't send data, set C<$data> to undef.
+
+L<XML::Simple> semantics (with ForceArray and KeepRoot) are used for XML.
+
+=cut
+
+sub xml_request {
+	my ($self, $data, $method, $path, $query) = @_;
+
+	my $XML = XML::Simple->new(
+		ForceArray => 1,
+		KeepRoot => 1,
+	);
+
+	my $req = HTTP::Request->new($method => $self->uri($path, $query));
+	$req->content($XML->XMLout($data)) if defined $data;
+	my $res = $self->run_request($req);
+	return ($res->code, $XML->XMLin($res->decoded_content));
 }
 
 
