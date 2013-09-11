@@ -190,6 +190,23 @@ sub bucket {
 }
 
 
+=item $S3->buckets()
+
+Returns an array of Net::Webservice::S3::Bucket instances for each bucket
+owned by the current user.
+
+=cut
+
+sub buckets {
+	my ($self) = @_;
+	my ($code, $res) = $self->xml_request(undef, GET => "");
+	Carp::croak("Got HTTP $code trying to list buckets") if $code != 200;
+	return map {
+		$self->bucket($_->{Name}->[0])
+	} @{ $res->{ListAllMyBucketsResult}->[0]->{Buckets}->[0]->{Bucket} };
+}
+
+
 =head2 PLUMBING
 
 The following functions are intended primarily for internal use by
