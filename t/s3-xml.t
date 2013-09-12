@@ -19,7 +19,7 @@ EOF
 
 my $xmlout = <<EOF;
 <?xml version="1.0" encoding="UTF-8"?>
-<ExampleResult xmlns="http://example.com/12345">
+<ExampleResult>
 	<Foo attr="value" />
 	<Bar>123</Bar>
 	<Bar>456</Bar>
@@ -53,7 +53,6 @@ my ($code, $result) = $S3->xml_request(
 
 is_deeply($result, {
 	ExampleResult => [{
-		xmlns => "http://example.com/12345",
 		Foo => [{ attr => "value" }],
 		Bar => [
 			"123",

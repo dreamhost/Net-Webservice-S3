@@ -10,7 +10,7 @@ my $S3 = Net::Webservice::S3->new(
 
 my $xml = <<EOF;
 <?xml version="1.0" encoding="UTF-8"?>
-<ListAllMyBucketsResult xmlns="http://doc.s3.amazonaws.com/2006-03-01">
+<ListAllMyBucketsResult>
   <Owner>
     <ID>bcaf1ffd86f461ca5fb16fd081034f</ID>
     <DisplayName>webfile</DisplayName>

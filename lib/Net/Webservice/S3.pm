@@ -379,26 +379,6 @@ sub xml_request {
 }
 
 
-=item Net::Webservice::S3->build_xml($element, \%data)
-
-Wraps the specified data in an XML element with the specified element name and
-standard S3 XML namespace.
-
-Unless you're building your own requests, you probably don't need this.
-
-=cut
-
-sub build_xml {
-	my ($self, $element, $data) = @_;
-	return {
-		$element => [{
-			xmlns => "http://s3.amazonaws.com/doc/2006-03-01/",
-			%$data
-		}]
-	};
-}
-
-
 =back
 
 =head1 SEE ALSO

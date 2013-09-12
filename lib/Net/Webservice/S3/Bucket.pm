@@ -157,7 +157,7 @@ sub create {
 
 	my ($code, $ign, $res) = $self->connection->xml_request(
 		HTTP::Request->new(PUT => $self->uri()),
-		$self->connection->build_xml("CreateBucketConfiguration", $req)
+		{ "CreateBucketConfiguration" => [{}] }
 	);
 	if ($code == 200) {
 		return 1;

@@ -12,7 +12,7 @@ my $S3 = Net::Webservice::S3->new(
 my $B;
 
 my $xml = <<EOF;
-<CreateBucketConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/" />
+<CreateBucketConfiguration></CreateBucketConfiguration>
 EOF
 
 $mock_ua->map("https://s3.example.com/bucket/" => sub {
