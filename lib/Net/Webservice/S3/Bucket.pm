@@ -120,6 +120,75 @@ sub exists {
 }
 
 
+=item $Bucket->create(%opts)
+
+Creates this bucket, and returns a true value when the bucket is created
+(or if it has previously been created by this user).
+
+Options must be drawn from the set:
+
+=over
+
+=item acl
+
+Not yet supported. Watch this space.
+
+=item location
+
+The internal name of a region for the bucket to be created in.
+
+Valid values will vary based on the provider being used.
+
+=back
+
+=cut
+
+sub create {
+	my ($self, %args) = @_;
+	my $req = {};
+
+	if (my $loc = delete $args{location}) {
+		$req->{LocationConstraint} = [$loc];
+	}
+
+	if (my (@args) = keys %args) {
+		Carp::croak("Unexpected arguments to Net::Webservice::S3::Bucket->create @args");
+	}
+
+	my ($code, $ign, $res) = $self->connection->xml_request(
+		HTTP::Request->new(PUT => $self->uri()),
+		$self->connection->build_xml("CreateBucketConfiguration", $req)
+	);
+	if ($code == 200) {
+		return 1;
+	} else {
+		die "HTTP $code while creating bucket";
+	}
+}
+
+
+=item $Bucket->destroy()
+
+Deletes the bucket, and returns a true value on success.
+
+The bucket must be empty before it can be deleted.
+
+=cut
+
+sub destroy {
+	my ($self) = @_;
+
+	my ($code) = $self->connection->xml_request(
+		HTTP::Request->new(DELETE => $self->uri())
+	);
+	if ($code == 204) { # No content (success)
+		return 1;
+	} else {
+		die "HTTP $code while destroying bucket";
+	}
+}
+
+
 =back
 
 =head1 AUTHOR

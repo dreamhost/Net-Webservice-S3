@@ -215,7 +215,7 @@ sub buckets {
 	my ($code, $res) = $self->xml_request(
 		HTTP::Request->new(GET => $self->uri())
 	);
-	Carp::croak("Got HTTP $code trying to list buckets") if $code != 200;
+	die "Got HTTP $code while listing buckets" if $code != 200;
 	return map {
 		$self->bucket($_->{Name}->[0])
 	} @{ $res->{ListAllMyBucketsResult}->[0]->{Buckets}->[0]->{Bucket} };
@@ -373,6 +373,26 @@ sub xml_request {
 	my $content = $res->decoded_content;
 	my $data = length $content ? $XML->XMLin($content) : undef;
 	return ($res->code, $data, $res);
+}
+
+
+=item Net::Webservice::S3->build_xml($element, \%data)
+
+Wraps the specified data in an XML element with the specified element name and
+standard S3 XML namespace.
+
+Unless you're building your own requests, you probably don't need this.
+
+=cut
+
+sub build_xml {
+	my ($self, $element, $data) = @_;
+	return {
+		$element => [{
+			xmlns => "http://s3.amazonaws.com/doc/2006-03-01/",
+			%$data
+		}]
+	};
 }
 
 
