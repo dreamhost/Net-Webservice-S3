@@ -53,15 +53,15 @@ Recommended values include:
 
 =over
 
-=item
+=item *
 
 s3.amazonaws.com (Amazon S3)
 
-=item
+=item *
 
 objects.dreamhost.com (DreamObjects)
 
-=item
+=item *
 
 storage.googleapis.com (Google Cloud Storage)
 
@@ -221,6 +221,7 @@ sub buckets {
 	} @{ $res->{ListAllMyBucketsResult}->[0]->{Buckets}->[0]->{Bucket} };
 }
 
+=back
 
 =head2 PLUMBING
 
@@ -228,6 +229,8 @@ The following functions are intended primarily for internal use by
 Net::Webservice::S3. They may be useful if you need to access some
 functionality that isn't currently exposed by the module, but they should be
 considered a last resort.
+
+=over
 
 =cut
 
@@ -404,11 +407,11 @@ Other distributions of possible interest:
 
 =over
 
-=item
+=item *
 
 L<Net::Amazon::S3>
 
-=item
+=item *
 
 L<Net::Async::Webservice::S3>
 
@@ -431,12 +434,12 @@ are permitted provided that the following conditions are met:
 
 =over
 
-=item
+=item *
 
 Redistributions of source code must retain the above copyright notice, this
 list of conditions and the following disclaimer.
 
-=item
+=item *
 
 Redistributions in binary form must reproduce the above copyright notice, this
 list of conditions and the following disclaimer in the documentation and/or
