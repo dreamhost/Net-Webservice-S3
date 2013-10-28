@@ -87,6 +87,97 @@ sub uri {
 }
 
 
+=item $Key->signed_uri(%opts)
+
+Returns a fully qualified pre-signed URI for this key.
+
+Options must be drawn from the set:
+
+=over
+
+=item expire
+
+An absolute time for the signature to expire, represented as an integer time_t.
+
+=item lifetime
+
+The amount of time the signature should be valid for, represented as a number
+of seconds.
+
+=item method
+
+The method of request to sign. Defaults to C<GET>.
+
+=item query
+
+Query string options to be used on the URI, in either of the forms accepted by
+Key->uri. This can be used for signing a URL to access special subresources
+such as C<acl>.
+
+=item content_type
+
+=item content_md5
+
+Special headers to incorporate into the signature. These are usually used when
+signing URLs for PUT.
+
+=back
+
+Exactly one of C<expire> and C<lifetime> must be specified. The rest of the
+options are optional.
+
+=cut
+
+sub signed_uri {
+	my ($self, %opts) = @_;
+	my $expires;
+
+	if ($expires = delete $opts{expire}) {
+		# OK
+	} elsif (my $lifetime = delete $opts{lifetime}) {
+		$expires = time + $lifetime;
+	} else {
+		Carp::croak("Either expire or lifetime must be specified");
+	}
+
+	my $method = delete $opts{method} // "GET";
+	my $query  = delete $opts{query};
+	my $content_md5 = delete $opts{content_md5};
+	my $content_type = delete $opts{content_type};
+
+	my @query;
+	if (ref $query) {
+		@query = @$query;
+	} elsif (defined $query) {
+		# This ends up generating a query like:
+		#     ?AWSAccessKeyID=...&Signature=...&Expires=...&acl=
+		# which both AWS and DHO will accept and interpret as intended.
+		# (I haven't tested GCS; someone else should!)
+		@query = ($query => "");
+	}
+
+	if (my (@args) = keys %opts) {
+		Carp::croak("Unexpected arguments to Net::Webservice::S3::Key->signed_uri: @args");
+	}
+
+	$expires = int $expires;
+	Carp::croak("Invalid expiration time") if $expires <= 0;
+
+	my $req = HTTP::Request->new($method => $self->uri($query));
+	$req->header(Expires => $expires);
+	$req->header("Content-Type" => $content_type) if defined $content_type;
+	$req->header("Content-MD5" => $content_md5) if defined $content_md5;
+	my $sig = $self->connection->sign_request($req);
+
+	return $self->uri([
+		AWSAccessKeyId => $self->connection->access_key,
+		Signature => $sig,
+		Expires => $expires,
+		@query,
+	]);
+}
+
+
 =back
 
 =head1 AUTHOR
