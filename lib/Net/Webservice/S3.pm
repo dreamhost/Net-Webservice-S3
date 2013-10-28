@@ -270,22 +270,24 @@ sub _sign_request_string {
 	$canon_resource .= $ReqURI->path || "/";
 
 	my %subres;
-	for my $part (split /&/, $ReqURI->query) {
-		if (my ($k, $v) = $part =~ m{
-			^ (
-				acl | lifecycle | location | logging | notification |
-				partNumber | policy | requestPayment | torrent | uploadId |
-				uploads | versionId | versioning | versions | website |
-				response- (?:
-					content-type | content-language | expires |
-					cache-control | content-disposition | content-encoding
+	if ($ReqURI->query) {
+		for my $part (split /&/, $ReqURI->query) {
+			if (my ($k, $v) = $part =~ m{
+				^ (
+					acl | lifecycle | location | logging | notification |
+					partNumber | policy | requestPayment | torrent | uploadId |
+					uploads | versionId | versioning | versions | website |
+					response- (?:
+						content-type | content-language | expires |
+						cache-control | content-disposition | content-encoding
+					)
 				)
-			)
-			( = .* )? $
-		}x){
-			# Q: What happens if a subresource is duplicated?
-			# Documentation doesn't say.
-			$subres{$k} = URI::Escape::uri_unescape($v);
+				( = .* )? $
+			}x){
+				# Q: What happens if a subresource is duplicated?
+				# Documentation doesn't say.
+				$subres{$k} = URI::Escape::uri_unescape($v // "");
+			}
 		}
 	}
 
@@ -374,8 +376,8 @@ sub xml_request {
 	$req->content($XML->XMLout($data)) if defined $data;
 	my $res = $self->run_request($req);
 	my $content = $res->decoded_content;
-	my $data = length $content ? $XML->XMLin($content) : undef;
-	return ($res->code, $data, $res);
+	my $rdata = length $content ? $XML->XMLin($content) : undef;
+	return ($res->code, $rdata, $res);
 }
 
 

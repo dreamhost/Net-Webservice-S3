@@ -76,6 +76,7 @@ parameters (as key-value pairs) if it is an array reference.
 
 sub uri {
 	my ($self, $path, $query) = @_;
+	$path //= "";
 	return $self->connection->uri($self->name . "/" . $path, $query);
 }
 
