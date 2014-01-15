@@ -187,7 +187,7 @@ Andrew Farmer <andrew.farmer@dreamhost.com>
 
 =head1 LICENSE
 
-Copyright (c) 2013, New Dream Network LLC (dba DreamHost)
+Copyright (c) 2013 - 2014, DreamHost (LLC)
 
 All rights reserved.
 

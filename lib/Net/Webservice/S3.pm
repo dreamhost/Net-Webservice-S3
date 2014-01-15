@@ -13,7 +13,7 @@ Net::Webservice::S3 - a simple but powerful interface to S3-compatible object st
 
 =cut
 
-our $VERSION = "0.01";
+our $VERSION = "0.010";
 
 use Carp ();
 use POSIX ();
@@ -407,7 +407,7 @@ Andrew Farmer <andrew.farmer@dreamhost.com>
 
 =head1 LICENSE
 
-Copyright (c) 2013, New Dream Network LLC (dba DreamHost)
+Copyright (c) 2013 - 2014, DreamHost (LLC)
 
 All rights reserved.
 
