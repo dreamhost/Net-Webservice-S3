@@ -1,5 +1,5 @@
 use strict;
-use Test::More tests => 30;
+use Test::More tests => 32;
 use Net::Webservice::S3;
 
 use HTTP::Request;
@@ -240,3 +240,24 @@ check_sig(
 	),
 	"/oy0PnUWukjqPRNMmz1YSj3iWhc="
 );
+
+
+# Ensure that a signed request contains the Date header that was used to sign
+# it, and the Authorization header containing the signature
+
+{
+	my $Req = HTTP::Request->new(GET => $S3->uri("test"));
+	my $sig = $S3->sign_request($Req);
+
+	is(
+		$Req->header("Authorization"),
+		"AWS AKIAIOSFODNN7EXAMPLE:$sig",
+		"Signed request has Authorization header"
+	);
+
+	like(
+		$Req->header("Date"),
+		qr/ GMT$/,
+		"Signed request has valid-looking Date header"
+	);
+}

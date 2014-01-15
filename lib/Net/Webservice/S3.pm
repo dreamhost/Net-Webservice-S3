@@ -312,6 +312,10 @@ Given an HTTP::Request instance representing a request to be made to the S3
 endpoint, the request is signed using the secret key present on the instance
 (by applying an Authorization header), and the raw signature is returned.
 
+If the request does not already have a Date header, one is added as part of the
+signing process. (It will not be used if an Expires or X-AMZ-Date header is
+present, but is added regardless.)
+
 =cut
 
 sub sign_request {
@@ -319,6 +323,10 @@ sub sign_request {
 
 	my $access_key = $self->access_key;
 	return if !defined $access_key;
+
+	if (!$req->header("Date")) {
+		$req->header("Date" => POSIX::strftime("%a, %d %b %Y %T GMT", gmtime));
+	}
 
 	my $sig = Digest::HMAC->new(
 		$self->secret_key, "Digest::SHA1"
@@ -342,7 +350,6 @@ as an HTTP::Response instance.
 
 sub run_request {
 	my ($self, $req) = @_;
-	$req->header("Date" => POSIX::strftime("%a, %d %b %Y %T GMT", gmtime));
 	$self->sign_request($req);
 	print STDERR "--- SEND ---\n" . $req->as_string if $self->{debug};
 	my $res = $self->agent->request($req);
