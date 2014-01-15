@@ -342,7 +342,7 @@ as an HTTP::Response instance.
 
 sub run_request {
 	my ($self, $req) = @_;
-	$req->header("Date" => POSIX::strftime("%a, %d %b %Y %T %z", gmtime));
+	$req->header("Date" => POSIX::strftime("%a, %d %b %Y %T GMT", gmtime));
 	$self->sign_request($req);
 	print STDERR "--- SEND ---\n" . $req->as_string if $self->{debug};
 	my $res = $self->agent->request($req);
