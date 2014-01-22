@@ -1,33 +1,43 @@
 use strict;
-use Test::More tests => 4;
-use Test::Exception;
-use Test::Mock::LWP::Dispatch qw( $mock_ua );
-use Net::Webservice::S3;
+use Fennec::Declare;
+use Test::XML;
 
-my $S3 = Net::Webservice::S3->new(
-	host => "s3.example.com",
-	ua => $mock_ua,
-);
+use_ok "Net::Webservice::S3";
 
-my $B;
 
-my $xml = <<EOF;
-<CreateBucketConfiguration></CreateBucketConfiguration>
-EOF
+my $S3 = Net::Webservice::S3->new(host => "s3.example.com");
 
-$mock_ua->map("https://s3.example.com/bucket/" => sub {
-	my ($req) = @_;
-	is($req->method, "PUT", "Request for bucket create is PUT");
-	is($req->content, $xml, "Content for bucket create is correct");
-	return HTTP::Response->new(200);
-});
 
-$B = $S3->bucket("bucket");
-ok($B->create(), "Bucket created");
+tests create_ok {
+	qtakeover "LWP::UserAgent" => (
+		request => sub {
+			my ($ua, $req) = @_;
+			is($req->uri, "https://s3.example.com/createme/", "right URI");
+			is($req->method, "PUT", "right method");
+			is_xml($req->content, q{
+				<CreateBucketConfiguration></CreateBucketConfiguration>
+			}, "right content");
+			return HTTP::Response->new(200);
+		},
+	);
 
-$mock_ua->map("https://s3.example.com/notyours/" => sub {
-	return HTTP::Response->new(403);
-});
+	my $B = $S3->bucket("createme");
+	ok($B->create(), "Bucket created");
+};
 
-$B = $S3->bucket("notyours");
-dies_ok(sub { $B->create() }, "Bucket existence causes failure");
+
+tests create_403 {
+	qtakeover "LWP::UserAgent" => (
+		request => sub {
+			my ($ua, $req) = @_;
+			is($req->uri, "https://s3.example.com/taken/", "right URI");
+			return HTTP::Response->new(403);
+		},
+	);
+
+	my $B = $S3->bucket("taken");
+	dies_ok(sub { $B->create() }, "Bucket not created");
+};
+
+
+done_testing;

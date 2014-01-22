@@ -1,21 +1,25 @@
 use strict;
-use Test::More tests => 2;
-use Test::Exception;
-use Test::Mock::LWP::Dispatch qw( $mock_ua );
-use Net::Webservice::S3;
+use Fennec::Declare;
 
-my $S3 = Net::Webservice::S3->new(
-	host => "s3.example.com",
-	ua => $mock_ua,
-);
+use_ok "Net::Webservice::S3";
 
-my $B;
 
-$mock_ua->map("https://s3.example.com/bucket/" => sub {
-	my ($req) = @_;
-	is($req->method, "DELETE", "Request for bucket destroy is DELETE");
-	return HTTP::Response->new(204);
-});
+my $S3 = Net::Webservice::S3->new(host => "s3.example.com");
 
-$B = $S3->bucket("bucket");
-ok($B->destroy(), "Bucket destroyed");
+
+tests destroy_bucket {
+	qtakeover "LWP::UserAgent" => (
+		request => sub {
+			my ($ua, $req) = @_;
+			is($req->uri, "https://s3.example.com/destroyme/", "right URI");
+			is($req->method, "DELETE", "right method");
+			return HTTP::Response->new(204);
+		},
+	);
+
+	my $B = $S3->bucket("destroyme");
+	ok($B->destroy(), "Bucket destroyed");
+};
+
+
+done_testing;

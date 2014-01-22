@@ -22,9 +22,9 @@ Module::Build->new(
 	},
 
 	test_requires => {
-		"Test::More" => 0,
-		"Test::Exception" => 0,
-		"Test::Mock::LWP::Dispatch" => 0,
+		"Fennec" => "2.009",
+		"Fennec::Declare" => "1.000",
+		"Test::XML" => 0,
 	},
 
 	meta_merge => {
