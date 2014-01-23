@@ -86,6 +86,15 @@ referring to this module.
 
 Causes S3 to spew out a bunch of debugging messages to standard error.
 
+=item retry
+
+The number of additional attempts that will be made to perform requests
+following a HTTP 5xx error. Default is 3; use 0 to disable retries entirely.
+
+=item retry_delay
+
+The (integer) number of seconds to wait between retries. Default is 1.
+
 =back
 
 =cut
@@ -112,6 +121,9 @@ sub new {
 	$self->{agent} = delete $args{agent} // LWP::UserAgent->new(agent => $ua);
 
 	$self->{debug} = delete $args{debug};
+
+	$self->{retry} = delete $args{retry} // 3;
+	$self->{retry_delay} = delete $args{retry_delay} // 1;
 
 	if (my (@args) = keys %args) {
 		Carp::croak("Unexpected arguments to Net::Webservice::S3->new: @args");
@@ -340,21 +352,65 @@ sub sign_request {
 }
 
 
-=item $S3->run_request($Request)
+=item $S3->run_request($Request, %options)
 
 Given an HTTP::Request instance representing a request to be made to the S3
 endpoint, the request is signed and executed, and the results are returned
 as an HTTP::Response instance.
 
+If the request fails with a 5xx error, it is automatically retried unless the
+C<error_ok> option is set.
+
+Options may be drawn from the set:
+
+=over
+
+=item error_ok
+
+Returns HTTP 5xx errors, rather than retrying them or throwing an exception.
+
+=back
+
 =cut
 
 sub run_request {
-	my ($self, $req) = @_;
-	$self->sign_request($req);
-	print STDERR "--- SEND ---\n" . $req->as_string if $self->{debug};
-	my $res = $self->agent->request($req);
-	print STDERR "--- RECV ---\n" . $res->as_string if $self->{debug};
-	return $res;
+	my ($self, $Req, %opts) = @_;
+
+	$self->sign_request($Req);
+	print STDERR "--- SEND ---\n" . $Req->as_string if $self->{debug};
+
+	my $Res;
+	my $retry_state = {};
+	do {
+		$Res = $self->agent->request($Req);
+		print STDERR "--- RECV ---\n" . $Res->as_string . "\n" if $self->{debug};
+		return $Res if $self->_should_accept_response($Res, \%opts);
+	} while ($self->_should_retry_request($Req, \%opts, $retry_state));
+
+	my $code = $Res->code;
+	Carp::croak("Request failed (HTTP $code)");
+}
+
+
+# $S3->_should_accept_response($Response, \%options)
+#
+# Should this response be "accepted" and returned to the caller?
+
+sub _should_accept_response {
+	my ($self, $Response, $opts) = @_;
+	return $Response->code < 500 || $opts->{error_ok};
+}
+
+
+# $S3->_should_retry_request($Request, $Response, \%options, \%state)
+#
+# Given that this request has failed, should we try it again?
+
+sub _should_retry_request {
+	my ($self, $Req, $opts, $state) = @_;
+	return 0 if $state->{try}++ >= $self->{retry};
+	sleep $self->{retry_delay};
+	return 1;
 }
 
 
