@@ -439,7 +439,11 @@ sub xml_request {
 	$req->content($XML->XMLout($data)) if defined $data;
 	my $res = $self->run_request($req);
 	my $content = $res->decoded_content;
-	my $rdata = length $content ? $XML->XMLin($content) : undef;
+	my $rdata;
+	if ($res->content_is_xml) {
+		my $content = $res->decoded_content;
+		$rdata = $XML->parse_string($content);
+	}
 	return ($res->code, $rdata, $res);
 }
 

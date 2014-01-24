@@ -15,6 +15,7 @@ tests list_buckets {
 			is($req->uri, "https://s3.example.com", "URI");
 			is($req->method, "GET");
 			my $Response = HTTP::Response->new(200);
+			$Response->header("Content-Type" => "text/xml");
 			$Response->content(q{<?xml version="1.0" encoding="UTF-8"?>
 				<ListAllMyBucketsResult>
 					<Owner>

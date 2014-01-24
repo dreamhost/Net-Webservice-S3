@@ -25,6 +25,7 @@ tests xml_request {
 			}, "request content");
 
 			my $Response = HTTP::Response->new(200);
+			$Response->header("Content-Type" => "text/xml");
 			$Response->content(q{
 				<ExampleResult>
 						<Foo attr="value" />
