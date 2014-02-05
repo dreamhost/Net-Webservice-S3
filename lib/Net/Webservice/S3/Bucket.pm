@@ -134,15 +134,11 @@ Options must be drawn from the set:
 
 =over
 
-=item acl
-
-Not yet supported. Watch this space.
-
 =item location
 
-The internal name of a region for the bucket to be created in.
+The internal name of a region for the bucket to be created in. Optional.
 
-Valid values will vary based on the provider being used.
+Accepted values will be dependent on the service.
 
 =back
 
@@ -162,7 +158,7 @@ sub create {
 
 	$self->connection->xml_request(
 		HTTP::Request->new(PUT => $self->uri()),
-		data => { "CreateBucketConfiguration" => [{}] }
+		data => { "CreateBucketConfiguration" => [$req] }
 	);
 
 	return 1;

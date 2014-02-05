@@ -40,4 +40,22 @@ tests create_403 {
 };
 
 
+tests create_location {
+	qtakeover "LWP::UserAgent" => (
+		request => sub {
+			my ($ua, $req) = @_;
+			is_xml($req->content, q{
+				<CreateBucketConfiguration>
+					<LocationConstraint>narnia</LocationConstraint>
+				</CreateBucketConfiguration>
+			});
+			return HTTP::Response->new(200);
+		},
+	);
+
+	my $B = $S3->bucket("emeraldcity");
+	ok($B->create(location => "narnia"), "Bucket created with location");
+};
+
+
 done_testing;
