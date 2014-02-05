@@ -107,9 +107,13 @@ by someone else.)
 
 sub exists {
 	my ($self) = @_;
-	my ($code) = $self->connection->xml_request(
-		HTTP::Request->new(HEAD => $self->uri(""))
+
+	my ($rdata, $res) = $self->connection->xml_request(
+		HTTP::Request->new(HEAD => $self->uri("")),
+		error_ok => 1,
 	);
+
+	my $code = $res->code;
 
 	return 0 if $code == 404;
 	return 1 if $code == 200 or $code == 403;
@@ -156,15 +160,12 @@ sub create {
 		Carp::croak("Unexpected arguments to Net::Webservice::S3::Bucket->create @args");
 	}
 
-	my ($code, $ign, $res) = $self->connection->xml_request(
+	$self->connection->xml_request(
 		HTTP::Request->new(PUT => $self->uri()),
-		{ "CreateBucketConfiguration" => [{}] }
+		data => { "CreateBucketConfiguration" => [{}] }
 	);
-	if ($code == 200) {
-		return 1;
-	} else {
-		die "HTTP $code while creating bucket";
-	}
+
+	return 1;
 }
 
 
@@ -178,15 +179,10 @@ The bucket must be empty before it can be deleted.
 
 sub destroy {
 	my ($self) = @_;
-
-	my ($code) = $self->connection->xml_request(
-		HTTP::Request->new(DELETE => $self->uri())
+	$self->connection->xml_request(
+		HTTP::Request->new(DELETE => $self->uri()),
 	);
-	if ($code == 204) { # No content (success)
-		return 1;
-	} else {
-		die "HTTP $code while destroying bucket";
-	}
+	return 1;
 }
 
 

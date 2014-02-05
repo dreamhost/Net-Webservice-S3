@@ -224,10 +224,9 @@ owned by the current user.
 
 sub buckets {
 	my ($self) = @_;
-	my ($code, $res) = $self->xml_request(
+	my $res = $self->xml_request(
 		HTTP::Request->new(GET => $self->uri())
 	);
-	die "Got HTTP $code while listing buckets" if $code != 200;
 	return map {
 		$self->bucket($_->{Name}->[0])
 	} @{ $res->{ListAllMyBucketsResult}->[0]->{Buckets}->[0]->{Bucket} };
@@ -415,37 +414,104 @@ sub _should_retry_request {
 }
 
 
-=item $S3->xml_request($request, [$data])
+=item $S3->xml_request($request, %options)
 
-Runs the specified request with XML input and output: if C<$data> is set, it is
-serialized as XML data and passed in the body of the request, and if the
-request returns data, it is deserialized.
+Runs the specified request with XML input and output: if C<data> is set in the
+options, it is serialized as XML data and passed in the body of the request,
+and if the request returns XML data, it is deserialized and returned.
 
-The function returns an array consisting of three elements: the HTTP response
-code, the deserialized response, and the raw HTTP::Response.
+If the XML-layer response contains an C<< <Error /> >> as its root element, an
+exception is thrown unless the C<error_ok> option is set.
+
+If the HTTP-layer response is not a 2xx success, an exception is thrown unless
+the C<error_ok> option is set. Additionally, if that option is set to 500, HTTP
+5xx errors are passed through as well, and do not trigger automatic request
+retries.
+
+When called in array context, this function returns an array consisting of the
+decoded response and the raw L<HTTP::Response>. In scalar context, only the
+decoded response is returned.
 
 L<XML::Simple> semantics (with ForceArray and KeepRoot both set) are used for
 parsing and generating XML.
 
+Options may be drawn from the set:
+
+=over
+
+=item data
+
+A Perl data structure to be serialized and sent in the body of the request.
+
+=item error_ok
+
+Causes non-200 HTTP responses and XML errors (including parsing errors) to not
+be thrown as exceptions.
+
+If the option is set to 500, the C<error_ok> option is also passed through to
+C<< $S3->run_request() >>, causing server errors to be passed on and not cause
+retries.
+
+Note that some error messages may only be apparent in the response data, and
+the response data may not be parsed if it was invalid. Do not set C<error_ok>
+unless you intend to handle all such errors yourself!
+
+=back
+
 =cut
 
 sub xml_request {
-	my ($self, $req, $data) = @_;
+	my ($self, $req, %opts) = @_;
 
 	my $XML = XML::Simple->new(
 		ForceArray => 1,
 		KeepRoot => 1,
 	);
 
-	$req->content($XML->XMLout($data)) if defined $data;
-	my $res = $self->run_request($req);
-	my $content = $res->decoded_content;
-	my $rdata;
-	if ($res->content_is_xml) {
-		my $content = $res->decoded_content;
-		$rdata = $XML->parse_string($content);
+	my $data = delete $opts{data};
+	my $error_ok = delete $opts{error_ok};
+
+	if (my (@args) = keys %opts) {
+		Carp::croak("Unexpected arguments to Net::Webservice::S3->xml_request: @args");
 	}
-	return ($res->code, $rdata, $res);
+
+	my %reqopts;
+	$reqopts{error_ok} = 1 if $error_ok == 500;
+
+	$req->content($XML->XMLout($data)) if defined $data;
+	my $res = $self->run_request($req, %reqopts);
+	my $rdata = $res->decoded_content;
+	if ($res->content_is_xml) {
+		# Catch errors in XML parsing
+		my $decode = eval { $XML->parse_string($rdata); };
+		if (defined $decode) {
+			$rdata = $decode;
+		} else {
+			Carp::croak("Invalid XML in response") if !$error_ok;
+		}
+	}
+
+	if (!$error_ok) {
+		if (ref $rdata && $rdata->{Error}) {
+			my $err = $rdata->{Error}->[0];
+			my $code = $err->{Code}->[0];
+			my $message = $err->{Message}->[0];
+			Carp::croak("$code: $message");
+		}
+
+		# Check for HTTP error *after* XML error, as many HTTP errors will
+		# contain a more useful explanation of what went wrong in the response
+		# body.
+		if ($res->code >= 300) {
+			Carp::croak("HTTP " . $res->code);
+		}
+	}
+
+	if (wantarray) {
+		return ($rdata, $res);
+	} else {
+		return $rdata;
+	}
 }
 
 
