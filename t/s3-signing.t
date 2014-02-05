@@ -263,4 +263,12 @@ tests signed_request_contains_date {
 };
 
 
+tests delete_in_signature {
+	my $Req = HTTP::Request->new(POST => $S3->uri("bucket/", "delete"));
+	my $sigstr = $S3->_sign_request_string($Req);
+
+	like($sigstr, qr{\n/bucket/\?delete$}, "subresource in signature for 'delete'");
+};
+
+
 done_testing;

@@ -289,6 +289,7 @@ sub _sign_request_string {
 					acl | lifecycle | location | logging | notification |
 					partNumber | policy | requestPayment | torrent | uploadId |
 					uploads | versionId | versioning | versions | website |
+					delete |
 					response- (?:
 						content-type | content-language | expires |
 						cache-control | content-disposition | content-encoding
