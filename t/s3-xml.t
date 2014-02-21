@@ -28,7 +28,7 @@ tests xml_request {
 			}, "request content");
 
 			my $Response = HTTP::Response->new(200);
-			$Response->content_type("text/xml");
+			$Response->content_type("application/xml");
 			$Response->content(q{
 				<ExampleResult>
 						<Foo attr="value" />
@@ -72,7 +72,7 @@ tests xml_request_calling {
 		request => sub {
 			my ($ua, $req) = @_;
 			my $Res = HTTP::Response->new(200);
-			$Res->content_type("text/xml");
+			$Res->content_type("application/xml");
 			$Res->content(q{
 				<ExampleResult />
 			});
@@ -116,7 +116,7 @@ tests http_error {
 		$S3->xml_request($Req)
 	}, qr/HTTP 400/, "HTTP error passed to caller");
 
-	# Content type still isn't text/xml, so this shouldn't be parsed!
+	# Content type still isn't application/xml, so this shouldn't be parsed!
 	$error_content = q{
 		<Error>
 			<Code>ExampleError</Code>
@@ -128,7 +128,7 @@ tests http_error {
 		$S3->xml_request($Req)
 	}, qr/HTTP 400/, "HTTP error still passed to caller");
 
-	$error_type = "text/xml";
+	$error_type = "application/xml";
 	throws_ok(sub {
 		$S3->xml_request($Req)
 	}, qr/ExampleError: This is an example/, "XML error parsed");

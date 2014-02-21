@@ -481,7 +481,7 @@ sub xml_request {
 	$req->content($XML->XMLout($data)) if defined $data;
 	my $res = $self->run_request($req, %reqopts);
 	my $rdata = $res->decoded_content;
-	if ($res->content_is_xml) {
+	if ($res->content_type =~ m{^(text|application)/xml}) {
 		# Catch errors in XML parsing
 		my $decode = eval { $XML->parse_string($rdata); };
 		if (defined $decode) {
